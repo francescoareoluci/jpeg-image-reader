@@ -79,8 +79,8 @@ public class Image {
 			        // Gamma compand and rescale to byte range:
 			        int grayLevel = (int) (255.0 * Math.pow(lum, 1.0 / 2.2));
 			        int gray = (grayLevel << 16) + (grayLevel << 8) + grayLevel; 
-			        grayscaleImage.setRGB(x, y, gray);
-			    }
+			      grayscaleImage.setRGB(x, y, gray);
+			   }
 			}
 		
 			return grayscaleImage;

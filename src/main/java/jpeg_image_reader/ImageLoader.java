@@ -364,7 +364,7 @@ public class ImageLoader {
 	
 		private String loadedPath;									///< Path from which images should be loaded
 		private ConcurrentHashMap<String, BufferedImage> imageMap;	///< Map containing images
-		private ThreadPoolExecutor threadPool;						///< Thread pool to handle parallel image loading
+		private ThreadPoolExecutor threadPool;				///< Thread pool to handle parallel image loading
 		private AtomicBoolean completed;							///< Atomic flag for signal loading completion
 		private AtomicInteger threadsCompleted;						///< Atomic integer to count the number of completed threads
 }

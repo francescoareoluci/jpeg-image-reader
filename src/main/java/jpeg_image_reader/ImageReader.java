@@ -11,10 +11,19 @@ public class ImageReader {
 	public static void main(String[] args) {
 		System.out.println("======= jpeg_image_reader =======");
 		
+		String sourceFolder = DEFAULT_FOLDER;
+		if (args.length == 0) {
+			System.out.println("Source images folder not specified, usage: java -jar jpeg_image_loader source_folder");
+			return;
+		}
+		else {
+			sourceFolder = args[0];
+		}
+		
 		// Test bench usage
-		if (args.length > 0) {
+		if (args.length > 1) {
 			BenchmarkSuite bs = new BenchmarkSuite();
-			switch (Integer.parseInt(args[0])) {
+			switch (Integer.parseInt(args[1])) {
 				case 1:
 					bs.performSequentialLoadBench(DEFAULT_FOLDER);
 					break;
@@ -90,7 +99,7 @@ public class ImageReader {
 		System.out.println("Clean result: " + result);
 		
 		// Parallel loading
-		imageLoader.parallelLoadImages(DEFAULT_FOLDER);
+		imageLoader.parallelLoadImages(sourceFolder);
 		
 		startTime = System.currentTimeMillis();
 		while (!imageLoader.getCompleted()) {}
@@ -139,7 +148,7 @@ public class ImageReader {
 			    
 		startTime = System.currentTimeMillis();
 		// Parallel loading
-		imageLoader.parallelLoadImages(DEFAULT_FOLDER);
+		imageLoader.parallelLoadImages(sourceFolder);
 		
 		// Pop images while still loading
 		int count = 0;
@@ -157,13 +166,13 @@ public class ImageReader {
 			}
 		}
 		endTime = System.currentTimeMillis();
-	    System.out.println("Parallel + extraction execution time: " + (endTime - startTime) + "ms"); 
+	   System.out.println("Parallel + extraction execution time: " + (endTime - startTime) + "ms"); 
 		
 		imageLoader.resetImages();
 		
 		// Sequential load images
 		startTime = System.currentTimeMillis();
-		if (!imageLoader.loadImages(DEFAULT_FOLDER)) {
+		if (!imageLoader.loadImages(sourceFolder)) {
 			System.out.println("Unable to load requested folder");
 			return;
 		}

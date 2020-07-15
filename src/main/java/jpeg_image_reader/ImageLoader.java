@@ -20,7 +20,7 @@ public class ImageLoader {
 		{
 			this.loadedPath = new String();
 			this.imageMap = new ConcurrentHashMap<String, BufferedImage>();
-			this.threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(DEFAULT_THREAD_POOL_SIZE);
+			this.threadPool = ThreadPool.getThreadPool();
 			this.completed = new AtomicBoolean(true);
 			this.threadsCompleted = new AtomicInteger(0);
 			//this.threadPool.prestartAllCoreThreads();
@@ -59,7 +59,7 @@ public class ImageLoader {
 				return false;
 			}
 			
-			this.threadPool.setCorePoolSize(size);
+			this.threadPool.setThreadSize(size);
 			return true;
 		}
 	
@@ -110,7 +110,7 @@ public class ImageLoader {
 		 * @param path: directory from which images should be loaded
 		 * @return		true if successful, false otherwise
 		 */
-		public boolean parallelLoadImages(String path)
+		public boolean parallelLoadImages(String path, int threadsNumbers)
 		{
 			// Check if path is a directory
 			File dir = new File(path);
@@ -140,12 +140,11 @@ public class ImageLoader {
 				}
 			}
 			
-			int poolSize = this.threadPool.getCorePoolSize();
-			int imagesPerThread = Math.floorDiv(paths.size(), poolSize) + 1;
+			int imagesPerThread = Math.floorDiv(paths.size(), threadsNumbers) + 1;
 			int start = 0;
 			int stop = 0;
 			
-			int end = poolSize > paths.size() ? paths.size() : poolSize;
+			int end = threadsNumbers > paths.size() ? paths.size() : threadsNumbers;
 						
 			long startTime = System.currentTimeMillis();
 			for (int i = 0; i < end; i++) {
@@ -153,12 +152,12 @@ public class ImageLoader {
 					start = stop;
 				}
 				stop = (i + 1) * imagesPerThread;
-				if ((stop > paths.size()) || (i == poolSize - 1)) {
+				if ((stop > paths.size()) || (i == threadsNumbers - 1)) {
 					stop = paths.size();
 				}
 				//System.out.println(start + " - " + stop);
 				
-				threadPool.submit(new ImageLoaderThread(this.imageMap,
+				threadPool.submitThread(new ImageLoaderThread(this.imageMap,
 																this.completed,
 																new ArrayList<String>(paths.subList(start, stop)),
 																this.threadsCompleted, 
@@ -207,7 +206,6 @@ public class ImageLoader {
 				}
 			}
 			
-			int poolSize = this.threadPool.getCorePoolSize();
 			int imagesPerThread = Math.floorDiv(paths.size(), threadsNumbers) + 1;
 			int start = 0;
 			int stop = 0;
@@ -220,7 +218,7 @@ public class ImageLoader {
 					start = stop;
 				}
 				stop = (i + 1) * imagesPerThread;
-				if ((stop > paths.size()) || (i == poolSize - 1)) {
+				if ((stop > paths.size()) || (i == threadsNumbers - 1)) {
 					stop = paths.size();
 				}
 				
@@ -335,7 +333,7 @@ public class ImageLoader {
 		 */
 		public boolean closeImageLoader()
 		{
-			this.threadPool.shutdown();
+			this.threadPool.closePool();
 			return true;
 		}
 	
@@ -364,7 +362,7 @@ public class ImageLoader {
 	
 		private String loadedPath;									///< Path from which images should be loaded
 		private ConcurrentHashMap<String, BufferedImage> imageMap;	///< Map containing images
-		private ThreadPoolExecutor threadPool;				///< Thread pool to handle parallel image loading
+		private ThreadPool threadPool;				///< Thread pool to handle parallel image loading
 		private AtomicBoolean completed;							///< Atomic flag for signal loading completion
 		private AtomicInteger threadsCompleted;						///< Atomic integer to count the number of completed threads
 }

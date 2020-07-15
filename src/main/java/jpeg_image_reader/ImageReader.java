@@ -27,6 +27,9 @@ public class ImageReader {
 				case 4:
 					bs.performParallelLoadOpBench(DEFAULT_FOLDER);
 					break;
+				case 5:
+					bs.performParallelLoadNoPoolBench(DEFAULT_FOLDER);
+					break;
 				default:
 					bs.performSequentialLoadBench(DEFAULT_FOLDER);
 					break;

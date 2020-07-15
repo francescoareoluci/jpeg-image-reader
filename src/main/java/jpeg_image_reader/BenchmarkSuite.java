@@ -46,6 +46,25 @@ public class BenchmarkSuite {
 		return true;
 	}
 	
+	public boolean performParallelLoadNoPoolBench(String folderPath)
+	{
+		ImageLoader imageLoader = new ImageLoader();
+		
+		long startTime = System.currentTimeMillis();
+		
+		imageLoader.parallelLoadImagesNoPool(folderPath, Runtime.getRuntime().availableProcessors());
+		while (!imageLoader.getCompleted()) {}
+		
+		long endTime = System.currentTimeMillis();
+		
+		System.out.println("Parallel loading execution time: " + (endTime - startTime) + "ms"); 
+		
+		imageLoader.resetImages();
+		imageLoader.closeImageLoader();
+		
+		return true;
+	}
+	
 	public boolean performSequentialLoadOpBench(String folderPath)
 	{
 		ImageLoader imageLoader = new ImageLoader();

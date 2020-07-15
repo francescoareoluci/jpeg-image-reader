@@ -23,6 +23,7 @@ public class ImageLoader {
 			this.threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(DEFAULT_THREAD_POOL_SIZE);
 			this.completed = new AtomicBoolean(true);
 			this.threadsCompleted = new AtomicInteger(0);
+			//this.threadPool.prestartAllCoreThreads();
 		}
 	
 		public String getLoadedPath()
@@ -104,7 +105,7 @@ public class ImageLoader {
 		
 		/**
 		 * This method can be used to load in parallel
-		 * mode the requested images
+		 * mode the requested images using the thread pool
 		 *
 		 * @param path: directory from which images should be loaded
 		 * @return		true if successful, false otherwise
@@ -146,6 +147,7 @@ public class ImageLoader {
 			
 			int end = poolSize > paths.size() ? paths.size() : poolSize;
 						
+			long startTime = System.currentTimeMillis();
 			for (int i = 0; i < end; i++) {
 				if (i != 0) {
 					start = stop;
@@ -162,6 +164,76 @@ public class ImageLoader {
 																this.threadsCompleted, 
 																end));
 			}
+			long endTime = System.currentTimeMillis();
+			System.out.println("Thread creation took: " + (endTime - startTime) + "ms"); 
+		
+			return true;
+		}
+		
+		/**
+		 * This method can be used to load in parallel
+		 * mode the requested images without using a thread pool
+		 *
+		 * @param path: directory from which images should be loaded
+		 * @return		true if successful, false otherwise
+		 */
+		public boolean parallelLoadImagesNoPool(String path, int threadsNumbers)
+		{
+			// Check if path is a directory
+			File dir = new File(path);
+			if (!dir.isDirectory()) {
+				return false;
+			}
+			
+			this.completed.set(false);
+			this.threadsCompleted.set(0);
+						
+			this.loadedPath = path;
+						
+			// Iterate in path for jpg images
+			File[] files = new File(path).listFiles();
+			String fileName = new String();
+			ArrayList<String> paths = new ArrayList<String>();
+			
+			for (File file : files) {
+				if (file.isDirectory()) {
+					continue;
+				}
+							
+				fileName = file.getName();
+				if (fileName.endsWith("jpg") ||
+						fileName.endsWith("jpeg")) {
+					paths.add(file.getAbsolutePath());
+				}
+			}
+			
+			int poolSize = this.threadPool.getCorePoolSize();
+			int imagesPerThread = Math.floorDiv(paths.size(), threadsNumbers) + 1;
+			int start = 0;
+			int stop = 0;
+			
+			int end = threadsNumbers > paths.size() ? paths.size() : threadsNumbers;
+						
+			long startTime = System.currentTimeMillis();
+			for (int i = 0; i < end; i++) {
+				if (i != 0) {
+					start = stop;
+				}
+				stop = (i + 1) * imagesPerThread;
+				if ((stop > paths.size()) || (i == poolSize - 1)) {
+					stop = paths.size();
+				}
+				
+				ImageLoaderThread imt = new ImageLoaderThread(this.imageMap,
+																													this.completed,
+																													new ArrayList<String>(paths.subList(start, stop)),
+																													this.threadsCompleted, 
+																													end);
+				Thread th = new Thread(imt);
+				th.start();
+			}
+			long endTime = System.currentTimeMillis();
+			System.out.println("Thread creation took: " + (endTime - startTime) + "ms"); 
 		
 			return true;
 		}

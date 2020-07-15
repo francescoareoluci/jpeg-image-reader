@@ -1,6 +1,9 @@
 package jpeg_image_reader;
 
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class BenchmarkSuite {
 	
@@ -68,7 +71,6 @@ public class BenchmarkSuite {
 	public boolean performSequentialLoadOpBench(String folderPath)
 	{
 		ImageLoader imageLoader = new ImageLoader();
-		ThreadPool pool = ThreadPool.getThreadPool();
 		
 		long startTime = System.currentTimeMillis();
 		
@@ -79,21 +81,16 @@ public class BenchmarkSuite {
 	
 		BufferedImage image = null;
 		Image img = new Image();
-		long tasks = 0;
+		ArrayList<BufferedImage> gsImages = new ArrayList<BufferedImage>();
 		
 		while (imageLoader.getNumberOfImages() != 0) {
 			image = imageLoader.popImage();
 				
 			if (image != null) {
 				img.setImage(image);
-				//pool.submitThread(new ImageProcessingThread(img));
-				//img.getMean();
-				img.grayscaleConversion();
-				tasks++;
+				gsImages.add(img.grayscaleConversion());
 			}
 		}
-		
-		//while (pool.getCompletedTask() != tasks) {}
 		
 		long endTime = System.currentTimeMillis();
 		System.out.println("Sequential loading+op execution time: " + (endTime - startTime) + "ms"); 
@@ -118,21 +115,28 @@ public class BenchmarkSuite {
 	
 		BufferedImage image = null;
 		Image img = new Image();
-		long tasks = 0;
+		ArrayList<BufferedImage> gsImages = new ArrayList<BufferedImage>();
+		ArrayList<Future<BufferedImage>> futureList = new ArrayList<Future<BufferedImage>>();
 		
 		while (imageLoader.getNumberOfImages() != 0) {
 			image = imageLoader.popImage();
 				
 			if (image != null) {
 				img.setImage(image);
-				pool.submitThread(new ImageProcessingThread(img));
-				//img.getMean();
-				//img.grayscaleConversion();
-				tasks++;
+				futureList.add(pool.submitThread(new ImageProcessingThread(img)));
 			}
 		}
 		
-		while (pool.getCompletedTask() != tasks) {}
+		for (Future<BufferedImage> f : futureList) {
+			try {
+				// Sync wait
+				gsImages.add(f.get());
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
+		}
 		
 		long endTime = System.currentTimeMillis();
 		System.out.println("Sequential loading+op execution time: " + (endTime - startTime) + "ms"); 
@@ -154,26 +158,35 @@ public class BenchmarkSuite {
 		
 		BufferedImage image = null;
 		Image img = new Image();
-		long tasks = threadsNumber;
+		ArrayList<BufferedImage> gsImages = new ArrayList<BufferedImage>();
+		ArrayList<Future<BufferedImage>> futureList = new ArrayList<Future<BufferedImage>>();
 		
 		while (imageLoader.getNumberOfImages() == 0) {}
 		while (!imageLoader.getCompleted() || imageLoader.getNumberOfImages() != 0) {
-			// TODO: how to know number of images a priori?
-			
 			image = imageLoader.popImage();
 				
 			if (image != null) {
 				img.setImage(image);
-				pool.submitThread(new ImageProcessingThread(img));
-				//img.getMean();
-				tasks++;
+				futureList.add(pool.submitThread(new ImageProcessingThread(img)));
 			}
 		}
 		
-		while (pool.getCompletedTask() != tasks) {}
+		System.out.println("Pop!");
+		for (Future<BufferedImage> f : futureList) {
+			try {
+				// Sync wait
+				gsImages.add(f.get());
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
+		}
 		
 		long endTime = System.currentTimeMillis();
 		System.out.println("Parallel loading+op execution time: " + (endTime - startTime) + "ms"); 
+		
+		System.out.println(gsImages.size());
 		
 		imageLoader.resetImages();
 		imageLoader.closeImageLoader();

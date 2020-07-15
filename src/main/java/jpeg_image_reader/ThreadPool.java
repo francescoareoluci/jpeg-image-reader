@@ -1,6 +1,9 @@
 package jpeg_image_reader;
 
+import java.awt.image.BufferedImage;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class ThreadPool {
@@ -9,6 +12,7 @@ public class ThreadPool {
 	private ThreadPool() 
 	{
 		this.pool = (ThreadPoolExecutor) Executors.newFixedThreadPool(DEFAULT_THREAD_POOL_SIZE);
+		this.pool.setMaximumPoolSize(DEFAULT_THREAD_POOL_SIZE);
 		this.pool.prestartAllCoreThreads();
 	}
 	
@@ -22,10 +26,33 @@ public class ThreadPool {
     	
         return instance; 
     } 
+    
+    /**
+     * This method can be used to submit 
+     * a Runnable to the pool
+     * 
+     * @param r: Runnable
+     */
+    public void submitThread(Runnable r)
+   {
+    	// Submit a Runnable object
+    	 this.pool.submit(r);
+   }
 	
-	public void submitThread(Runnable r)
+    /**
+     * This method can be used to submit 
+     * a Callable object
+     * 
+     * @param c: Callable
+     * @return		The Future containing the BufferedImage
+     */
+	public Future<BufferedImage> submitThread(Callable<BufferedImage> c)
 	{
-		this.pool.submit(r);
+		// Submit a Callable object
+		Future<BufferedImage> future;
+		future = this.pool.submit(c);
+		
+		 return future;
 	}
 	
 	public long getCompletedTask() 

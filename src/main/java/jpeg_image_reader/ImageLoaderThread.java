@@ -3,8 +3,6 @@ package jpeg_image_reader;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,7 +26,7 @@ public class ImageLoaderThread implements Runnable {
 	}
 	
 	public void run() {
-        BufferedImage img = null;
+		BufferedImage img = null;
         	
         for (String path : imagePaths) {
         	try {
@@ -38,11 +36,11 @@ public class ImageLoaderThread implements Runnable {
         		}
         	}
         	catch (IOException e) {
-                e.printStackTrace();
-				System.out.println("Unable to load image in " + path);
-            }
+        		e.printStackTrace();
+        		System.out.println("Unable to load image in " + path);
+         }
     		catch (OutOfMemoryError e) {
-				e.printStackTrace();
+    			e.printStackTrace();
     			System.out.println("Cannot read more images");
     		}	
         }
@@ -50,7 +48,7 @@ public class ImageLoaderThread implements Runnable {
         int value = this.thNumber.incrementAndGet();
         if (value == this.totalThreads) {
         	this.completed.set(true);
-        }
+      }
     }
 		
 	private ConcurrentHashMap<String, BufferedImage> concurrentMap;

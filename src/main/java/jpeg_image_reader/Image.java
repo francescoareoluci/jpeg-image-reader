@@ -8,6 +8,11 @@ import javax.imageio.ImageIO;
 
 public class Image {
 	
+		public static double GAMMA = 2.2;
+		public static double R_COEFF = 0.2126;
+		public static double G_COEFF = 0.7152;
+		public static double B_COEFF = 0.0722;
+		
 		public Image() {}
 	
 		public Image(BufferedImage image)
@@ -63,23 +68,24 @@ public class Image {
 			
 			for (int x = 0; x < width; ++x) {
 			    for (int y = 0; y < height; ++y) {
+			    	// Get pixel channel values
 			        int rgb = this.image.getRGB(x, y);
 			        int r = (rgb >> 16) & 0xFF;
 			        int g = (rgb >> 8) & 0xFF;
 			        int b = (rgb & 0xFF);
 
-			        // Normalize and gamma correct:
-			        float rr = (float) Math.pow(r / 255.0, 2.2);
-			        float gg = (float) Math.pow(g / 255.0, 2.2);
-			        float bb = (float) Math.pow(b / 255.0, 2.2);
+			      // Normalize and evaluate gamma power
+			        float rGamma = (float) Math.pow(r / 255.0, GAMMA);
+			        float gGamma = (float) Math.pow(g / 255.0, GAMMA);
+			        float bGamma = (float) Math.pow(b / 255.0, GAMMA);
 
-			        // Calculate luminance:
-			        float lum = (float) (0.2126 * rr + 0.7152 * gg + 0.0722 * bb);
+			        float luminance = (float) (R_COEFF * rGamma +
+			        													G_COEFF * gGamma + B_COEFF * bGamma);
 
-			        // Gamma compand and rescale to byte range:
-			        int grayLevel = (int) (255.0 * Math.pow(lum, 1.0 / 2.2));
-			        int gray = (grayLevel << 16) + (grayLevel << 8) + grayLevel; 
-			      grayscaleImage.setRGB(x, y, gray);
+			      // Inverse gamma power and rescale to byte range:
+			        int grayLevel = (int) (255.0 * Math.pow(luminance, 1.0 / GAMMA));
+			        int grayPixel = (grayLevel << 16) + (grayLevel << 8) + grayLevel; 
+			      grayscaleImage.setRGB(x, y, grayPixel);
 			   }
 			}
 		

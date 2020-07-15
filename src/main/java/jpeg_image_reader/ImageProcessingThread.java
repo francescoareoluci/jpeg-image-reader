@@ -2,8 +2,6 @@ package jpeg_image_reader;
 
 import java.awt.image.BufferedImage;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ImageProcessingThread implements Callable<BufferedImage> {
 

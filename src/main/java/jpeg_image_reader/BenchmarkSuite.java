@@ -27,13 +27,13 @@ public class BenchmarkSuite {
 		return true;
 	}
 	
-	public boolean performParallelLoadBench(String folderPath)
+	public boolean performParallelLoadBench(String folderPath, int threadsNumber)
 	{
 		ImageLoader imageLoader = new ImageLoader();
 		
 		long startTime = System.currentTimeMillis();
 		
-		imageLoader.parallelLoadImages(folderPath);
+		imageLoader.parallelLoadImages(folderPath, threadsNumber);
 		while (!imageLoader.getCompleted()) {}
 		
 		long endTime = System.currentTimeMillis();
@@ -46,13 +46,13 @@ public class BenchmarkSuite {
 		return true;
 	}
 	
-	public boolean performParallelLoadNoPoolBench(String folderPath)
+	public boolean performParallelLoadNoPoolBench(String folderPath, int threadsNumber)
 	{
 		ImageLoader imageLoader = new ImageLoader();
 		
 		long startTime = System.currentTimeMillis();
 		
-		imageLoader.parallelLoadImagesNoPool(folderPath, Runtime.getRuntime().availableProcessors());
+		imageLoader.parallelLoadImagesNoPool(folderPath, threadsNumber);
 		while (!imageLoader.getCompleted()) {}
 		
 		long endTime = System.currentTimeMillis();
@@ -68,8 +68,7 @@ public class BenchmarkSuite {
 	public boolean performSequentialLoadOpBench(String folderPath)
 	{
 		ImageLoader imageLoader = new ImageLoader();
-		// Keep a thread to execute operation
-		imageLoader.setThreadSize(Runtime.getRuntime().availableProcessors() - 2);
+		ThreadPool pool = ThreadPool.getThreadPool();
 		
 		long startTime = System.currentTimeMillis();
 		
@@ -77,28 +76,26 @@ public class BenchmarkSuite {
 			System.out.println("Unable to load requested folder");
 			return false;
 		}
-		
-		int count = 0;
-		int size = imageLoader.getNumberOfImages();
+	
 		BufferedImage image = null;
 		Image img = new Image();
+		long tasks = 0;
 		
-		while (true) {
-			if (count == size) {
-				break;
-			}
-			
+		while (imageLoader.getNumberOfImages() != 0) {
 			image = imageLoader.popImage();
 				
 			if (image != null) {
 				img.setImage(image);
-				img.getMean();
-				count++;
+				//pool.submitThread(new ImageProcessingThread(img));
+				//img.getMean();
+				img.grayscaleConversion();
+				tasks++;
 			}
 		}
 		
-		long endTime = System.currentTimeMillis();
+		//while (pool.getCompletedTask() != tasks) {}
 		
+		long endTime = System.currentTimeMillis();
 		System.out.println("Sequential loading+op execution time: " + (endTime - startTime) + "ms"); 
 		
 		imageLoader.resetImages();
@@ -107,36 +104,75 @@ public class BenchmarkSuite {
 		return true;
 	}
 	
-	public boolean performParallelLoadOpBench(String folderPath)
+	public boolean performSequentialLoadParallelOpBench(String folderPath)
 	{
 		ImageLoader imageLoader = new ImageLoader();
+		ThreadPool pool = ThreadPool.getThreadPool();
 		
 		long startTime = System.currentTimeMillis();
 		
-		imageLoader.parallelLoadImages(folderPath);
-		
-		int count = 0;
-		int size = imageLoader.getNumberOfImages();
+		if (!imageLoader.loadImages(folderPath)) {
+			System.out.println("Unable to load requested folder");
+			return false;
+		}
+	
 		BufferedImage image = null;
 		Image img = new Image();
+		long tasks = 0;
 		
-		while (true) {
-			// TODO: how to know number of images a priori?
-			if (count == 300) {
-				break;
+		while (imageLoader.getNumberOfImages() != 0) {
+			image = imageLoader.popImage();
+				
+			if (image != null) {
+				img.setImage(image);
+				pool.submitThread(new ImageProcessingThread(img));
+				//img.getMean();
+				//img.grayscaleConversion();
+				tasks++;
 			}
+		}
+		
+		while (pool.getCompletedTask() != tasks) {}
+		
+		long endTime = System.currentTimeMillis();
+		System.out.println("Sequential loading+op execution time: " + (endTime - startTime) + "ms"); 
+		
+		imageLoader.resetImages();
+		imageLoader.closeImageLoader();
+		
+		return true;
+	}
+	
+	public boolean performParallelLoadOpBench(String folderPath, int threadsNumber)
+	{
+		ImageLoader imageLoader = new ImageLoader();
+		ThreadPool pool = ThreadPool.getThreadPool();
+		
+		long startTime = System.currentTimeMillis();
+		
+		imageLoader.parallelLoadImages(folderPath, threadsNumber);
+		
+		BufferedImage image = null;
+		Image img = new Image();
+		long tasks = threadsNumber;
+		
+		while (imageLoader.getNumberOfImages() == 0) {}
+		while (!imageLoader.getCompleted() || imageLoader.getNumberOfImages() != 0) {
+			// TODO: how to know number of images a priori?
 			
 			image = imageLoader.popImage();
 				
 			if (image != null) {
 				img.setImage(image);
-				img.getMean();
-				count++;
+				pool.submitThread(new ImageProcessingThread(img));
+				//img.getMean();
+				tasks++;
 			}
 		}
 		
-		long endTime = System.currentTimeMillis();
+		while (pool.getCompletedTask() != tasks) {}
 		
+		long endTime = System.currentTimeMillis();
 		System.out.println("Parallel loading+op execution time: " + (endTime - startTime) + "ms"); 
 		
 		imageLoader.resetImages();

@@ -33,8 +33,8 @@ public class Image {
 		public int getMean()
 		{
 			int sum = 0;
-			for (int i = 0; i < this.image.getWidth() / 4; i++) {
-				for (int j = 0; j < this.image.getHeight() / 4; j++) {
+			for (int i = 0; i < this.image.getWidth(); i++) {
+				for (int j = 0; j < this.image.getHeight(); j++) {
 					sum += this.image.getRGB(i, j);
 				}
 			}

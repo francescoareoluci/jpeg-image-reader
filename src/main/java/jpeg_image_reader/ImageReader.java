@@ -7,6 +7,7 @@ import java.util.ArrayList;
 public class ImageReader {
 	
 	public static String DEFAULT_FOLDER = "/home/francesco/misc/STS-Workspace/jpeg_image_reader/images";
+	public static int DEFAULT_LOADER_THREADS = 4;
 
 	public static void main(String[] args) {
 		System.out.println("======= jpeg_image_reader =======");
@@ -25,22 +26,25 @@ public class ImageReader {
 			BenchmarkSuite bs = new BenchmarkSuite();
 			switch (Integer.parseInt(args[1])) {
 				case 1:
-					bs.performSequentialLoadBench(DEFAULT_FOLDER);
+					bs.performSequentialLoadBench(sourceFolder);
 					break;
 				case 2:
-					bs.performParallelLoadBench(DEFAULT_FOLDER);
+					bs.performParallelLoadBench(sourceFolder, DEFAULT_LOADER_THREADS);
 					break;
 				case 3:
-					bs.performSequentialLoadOpBench(DEFAULT_FOLDER);
+					bs.performSequentialLoadOpBench(sourceFolder);
 					break;
 				case 4:
-					bs.performParallelLoadOpBench(DEFAULT_FOLDER);
+					bs.performParallelLoadOpBench(sourceFolder, DEFAULT_LOADER_THREADS);
 					break;
 				case 5:
-					bs.performParallelLoadNoPoolBench(DEFAULT_FOLDER);
+					bs.performParallelLoadNoPoolBench(sourceFolder, DEFAULT_LOADER_THREADS);
+					break;
+				case 6:
+					bs.performSequentialLoadParallelOpBench(sourceFolder);
 					break;
 				default:
-					bs.performSequentialLoadBench(DEFAULT_FOLDER);
+					bs.performSequentialLoadBench(sourceFolder);
 					break;
 			}
 			return;
@@ -99,7 +103,7 @@ public class ImageReader {
 		System.out.println("Clean result: " + result);
 		
 		// Parallel loading
-		imageLoader.parallelLoadImages(sourceFolder);
+		imageLoader.parallelLoadImages(sourceFolder, DEFAULT_LOADER_THREADS);
 		
 		startTime = System.currentTimeMillis();
 		while (!imageLoader.getCompleted()) {}
@@ -148,7 +152,7 @@ public class ImageReader {
 			    
 		startTime = System.currentTimeMillis();
 		// Parallel loading
-		imageLoader.parallelLoadImages(sourceFolder);
+		imageLoader.parallelLoadImages(sourceFolder, DEFAULT_LOADER_THREADS);
 		
 		// Pop images while still loading
 		int count = 0;

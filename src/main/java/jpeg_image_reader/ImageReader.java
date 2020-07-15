@@ -43,6 +43,9 @@ public class ImageReader {
 				case 6:
 					bs.performSequentialLoadParallelOpBench(sourceFolder);
 					break;
+				case 7:
+					bs.performCallableLoadBench(sourceFolder, DEFAULT_LOADER_THREADS);
+					break;
 				default:
 					bs.performSequentialLoadBench(sourceFolder);
 					break;

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -167,6 +168,70 @@ public class ImageLoader {
 			System.out.println("Thread creation took: " + (endTime - startTime) + "ms"); 
 		
 			return true;
+		}
+		
+		/**
+		 * This method can be used to load in parallel
+		 * mode the requested images using the thread pool
+		 *
+		 * @param path: directory from which images should be loaded
+		 * @return		true if successful, false otherwise
+		 */
+		public ArrayList<Future<Integer>> callableLoadImages(String path, int threadsNumbers)
+		{
+			// Check if path is a directory
+			File dir = new File(path);
+			if (!dir.isDirectory()) {
+				return new ArrayList<Future<Integer>>();
+			}
+			
+			this.completed.set(false);
+			this.threadsCompleted.set(0);
+						
+			this.loadedPath = path;
+						
+			// Iterate in path for jpg images
+			File[] files = new File(path).listFiles();
+			String fileName = new String();
+			ArrayList<String> paths = new ArrayList<String>();
+			
+			for (File file : files) {
+				if (file.isDirectory()) {
+					continue;
+				}
+							
+				fileName = file.getName();
+				if (fileName.endsWith("jpg") ||
+						fileName.endsWith("jpeg")) {
+					paths.add(file.getAbsolutePath());
+				}
+			}
+			
+			ArrayList<Future<Integer>> futureList = new ArrayList<Future<Integer>>();
+			int imagesPerThread = Math.floorDiv(paths.size(), threadsNumbers) + 1;
+			int start = 0;
+			int stop = 0;
+			
+			int end = threadsNumbers > paths.size() ? paths.size() : threadsNumbers;
+						
+			long startTime = System.currentTimeMillis();
+			for (int i = 0; i < end; i++) {
+				if (i != 0) {
+					start = stop;
+				}
+				stop = (i + 1) * imagesPerThread;
+				if ((stop > paths.size()) || (i == threadsNumbers - 1)) {
+					stop = paths.size();
+				}
+				//System.out.println(start + " - " + stop);
+				
+				futureList.add(threadPool.submitCallableReader(new ImageLoaderCallable(this.imageMap,
+																							new ArrayList<String>(paths.subList(start, stop)))));
+			}
+			long endTime = System.currentTimeMillis();
+			System.out.println("Thread creation took: " + (endTime - startTime) + "ms"); 
+		
+			return futureList;
 		}
 		
 		/**

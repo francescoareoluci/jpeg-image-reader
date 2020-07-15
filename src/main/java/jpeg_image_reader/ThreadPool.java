@@ -46,10 +46,26 @@ public class ThreadPool {
      * @param c: Callable
      * @return		The Future containing the BufferedImage
      */
-	public Future<BufferedImage> submitThread(Callable<BufferedImage> c)
+	public Future<BufferedImage> submitCallableProcess(Callable<BufferedImage> c)
 	{
 		// Submit a Callable object
 		Future<BufferedImage> future;
+		future = this.pool.submit(c);
+		
+		 return future;
+	}
+	
+	 /**
+     * This method can be used to submit 
+     * a Callable object
+     * 
+     * @param c: Callable
+     * @return		The Future containing the BufferedImage
+     */
+	public Future<Integer> submitCallableReader(Callable<Integer> c)
+	{
+		// Submit a Callable object
+		Future<Integer> future;
 		future = this.pool.submit(c);
 		
 		 return future;

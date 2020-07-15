@@ -49,6 +49,35 @@ public class BenchmarkSuite {
 		return true;
 	}
 	
+	public boolean performCallableLoadBench(String folderPath, int threadsNumber)
+	{
+		ImageLoader imageLoader = new ImageLoader();
+		
+		long startTime = System.currentTimeMillis();
+		
+		ArrayList<Future<Integer>> futureList = new ArrayList<Future<Integer>>();
+		futureList = imageLoader.callableLoadImages(folderPath, threadsNumber);
+		//while (!imageLoader.getCompleted()) {}
+		for (Future<Integer> f : futureList) {
+			try {
+				System.out.println(f.get());
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		long endTime = System.currentTimeMillis();
+		
+		System.out.println("Parallel loading execution time: " + (endTime - startTime) + "ms"); 
+		
+		imageLoader.resetImages();
+		imageLoader.closeImageLoader();
+		
+		return true;
+	}
+	
 	public boolean performParallelLoadNoPoolBench(String folderPath, int threadsNumber)
 	{
 		ImageLoader imageLoader = new ImageLoader();
@@ -123,9 +152,11 @@ public class BenchmarkSuite {
 				
 			if (image != null) {
 				img.setImage(image);
-				futureList.add(pool.submitThread(new ImageProcessingThread(img)));
+				futureList.add(pool.submitCallableProcess(new ImageProcessingThread(img)));
 			}
 		}
+		
+		System.out.println("All images have been assigned to Callables for processing...");
 		
 		for (Future<BufferedImage> f : futureList) {
 			try {
@@ -160,18 +191,18 @@ public class BenchmarkSuite {
 		Image img = new Image();
 		ArrayList<BufferedImage> gsImages = new ArrayList<BufferedImage>();
 		ArrayList<Future<BufferedImage>> futureList = new ArrayList<Future<BufferedImage>>();
-		
-		while (imageLoader.getNumberOfImages() == 0) {}
+
 		while (!imageLoader.getCompleted() || imageLoader.getNumberOfImages() != 0) {
 			image = imageLoader.popImage();
 				
 			if (image != null) {
 				img.setImage(image);
-				futureList.add(pool.submitThread(new ImageProcessingThread(img)));
+				futureList.add(pool.submitCallableProcess(new ImageProcessingThread(img)));
 			}
 		}
 		
-		System.out.println("Pop!");
+		System.out.println("All images have been assigned to Callables for processing...");
+		
 		for (Future<BufferedImage> f : futureList) {
 			try {
 				// Sync wait
@@ -185,8 +216,6 @@ public class BenchmarkSuite {
 		
 		long endTime = System.currentTimeMillis();
 		System.out.println("Parallel loading+op execution time: " + (endTime - startTime) + "ms"); 
-		
-		System.out.println(gsImages.size());
 		
 		imageLoader.resetImages();
 		imageLoader.closeImageLoader();

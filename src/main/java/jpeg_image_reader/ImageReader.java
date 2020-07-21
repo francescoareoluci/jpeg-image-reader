@@ -12,8 +12,8 @@ public class ImageReader {
 			System.out.println("Source images folder not specified");
 			System.out.println("Usage: java -jar jpeg_image_loader source_folder operation");
 			System.out.println("source_folder: directory containing jpg images to be loaded");
-			System.out.println("operation: optional - specify how to load images and processing");
-			System.out.println("	1: Sequential load of source_folder jpg images. Default: 1");
+			System.out.println("operation: optional - specify how to load images and processing. Default: 1");
+			System.out.println("	1: Sequential load of source_folder jpg images.");
 			System.out.println("	2: Parallel load using a thread pool");
 			System.out.println("	3: Parallel load using Callables");
 			System.out.println("	4: Parallel load using simple threads");

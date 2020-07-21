@@ -29,8 +29,8 @@ Once the application has been built, the jar file will be accessible in the targ
 ```
 Usage: java -jar jpeg_image_loader source_folder operation
 source_folder: directory containing jpg images to be loaded
-operation: optional - specify how to load images and processing
-	1: Sequential load of source_folder jpg images. Default: 1
+operation: optional - specify how to load images and processing. Default: 1
+	1: Sequential load of source_folder jpg images.
 	2: Parallel load using a thread pool
 	3: Parallel load using Callables
 	4: Parallel load using simple threads

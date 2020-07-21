@@ -14,7 +14,7 @@ import javax.imageio.ImageIO;
 public class ImageLoader {
 		
 		enum ThreadType {
-			THREAD,
+			NO_POOL_THREAD,
 			POOL_THREAD,
 		};
 	
@@ -109,15 +109,18 @@ public class ImageLoader {
 		 * mode the requested images
 		 *
 		 * @param path: directory from which images should be loaded
-		 * @return		true if successful, false otherwise
+		 * @return		thread list that can be used to wait for termination
+		 * 				if pool is not used
 		 */
-		public boolean parallelLoadImages(String path, int threadsNumbers, ThreadType type)
+		public ArrayList<Thread> parallelLoadImages(String path, int threadsNumbers, ThreadType type)
 		{
+			ArrayList<Thread> threadList = new ArrayList<Thread>();
+			
 			// Check if path is a directory
 			File dir = new File(path);
 			if (!dir.isDirectory()) {
 				System.out.println("Requested path is not a directory");
-				return false;
+				return threadList;
 			}
 			
 			this.loadCompleted.set(false);
@@ -160,29 +163,27 @@ public class ImageLoader {
 					stop = paths.size();
 				}
 				
+				ImageLoaderThread imt = new ImageLoaderThread(this.imageMap,
+						this.loadCompleted,
+						new ArrayList<String>(paths.subList(start, stop)),
+						this.completedThreads, 
+						end);
+				
 				if (type == ThreadType.POOL_THREAD) {
 					// Start loading by submitting a task to the pool
-					threadPool.submitThread(new ImageLoaderThread(this.imageMap,
-																this.loadCompleted,
-																new ArrayList<String>(paths.subList(start, stop)),
-																this.completedThreads, 
-																end));
+					threadPool.submitThread(imt);
 				}
 				else {
 					// Start loading by starting a thread
-					ImageLoaderThread imt = new ImageLoaderThread(this.imageMap,
-																this.loadCompleted,
-																new ArrayList<String>(paths.subList(start, stop)),
-																this.completedThreads, 
-																end);
 					Thread th = new Thread(imt);
 					th.start();
+					threadList.add(th);
 				}
 			}
 			long endTime = System.currentTimeMillis();
 			System.out.println("Thread creation took: " + (endTime - startTime) + "ms"); 
 		
-			return true;
+			return threadList;
 		}
 		
 		/**
@@ -190,15 +191,17 @@ public class ImageLoader {
 		 * mode the requested images using Callables
 		 *
 		 * @param path: directory from which images should be loaded
-		 * @return		true if successful, false otherwise
+		 * @return		list of futures
 		 */
 		public ArrayList<Future<Integer>> callableLoadImages(String path, int threadsNumbers)
 		{
+			ArrayList<Future<Integer>> futureList = new ArrayList<Future<Integer>>();
+			
 			// Check if path is a directory
 			File dir = new File(path);
 			if (!dir.isDirectory()) {
 				System.out.println("Requested path is not a directory");
-				return new ArrayList<Future<Integer>>();
+				return futureList;
 			}
 			
 			this.loadCompleted.set(false);
@@ -223,7 +226,6 @@ public class ImageLoader {
 				}
 			}
 			
-			ArrayList<Future<Integer>> futureList = new ArrayList<Future<Integer>>();
 			int imagesPerThread = Math.floorDiv(paths.size(), threadsNumbers) + 1;
 			int start = 0;
 			int stop = 0;

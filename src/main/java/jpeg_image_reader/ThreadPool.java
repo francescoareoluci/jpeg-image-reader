@@ -5,6 +5,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class ThreadPool {
 	static int DEFAULT_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
@@ -28,6 +29,20 @@ public class ThreadPool {
     	}
     	
         return instance; 
+    }
+    
+    /**
+     * Method to wait for thread in pool to terminate
+     * 
+     */
+    public void waitTermination()
+    {
+    	try {
+			pool.awaitTermination(24L, TimeUnit.HOURS);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
     
     public long getCompletedTask() 

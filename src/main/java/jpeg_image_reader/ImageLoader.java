@@ -316,18 +316,7 @@ public class ImageLoader {
 			this.loadedPath = "";
 			return true;
 		}
-		
-		/**
-		 * Shutdown the thread pool
-		 *
-		 * @return	true if successful, false otherwise
-		 */
-		public boolean detachPool()
-		{
-			this.threadPool.closePool();
-			return true;
-		}
-	
+
 		/**
 		 * Load an image from requested path
 		 *

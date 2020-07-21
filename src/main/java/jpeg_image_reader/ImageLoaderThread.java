@@ -13,15 +13,15 @@ import javax.imageio.ImageIO;
 public class ImageLoaderThread implements Runnable {
 	
 	public ImageLoaderThread(ConcurrentHashMap<String, BufferedImage> hashMap, 
-								AtomicBoolean completed, 
+								AtomicBoolean loadCompleted, 
 								ArrayList<String> imagePaths, 
-								AtomicInteger threadsCompleted, 
+								AtomicInteger completedThreads, 
 								int number)
 	{
 		this.concurrentMap = hashMap;
-		this.completed = completed;
+		this.loadCompleted = loadCompleted;
 		this.imagePaths = imagePaths;
-		this.thNumber = threadsCompleted;
+		this.completedThreads = completedThreads;
 		this.totalThreads = number;
 	}
 	
@@ -38,22 +38,22 @@ public class ImageLoaderThread implements Runnable {
         	catch (IOException e) {
         		e.printStackTrace();
         		System.out.println("Unable to load image in " + path);
-         }
+        	}
     		catch (OutOfMemoryError e) {
     			e.printStackTrace();
     			System.out.println("Cannot read more images");
     		}	
         }
         	
-        int value = this.thNumber.incrementAndGet();
+        int value = this.completedThreads.incrementAndGet();
         if (value == this.totalThreads) {
-        	this.completed.set(true);
-      }
+        	this.loadCompleted.set(true);
+        }
     }
 		
 	private ConcurrentHashMap<String, BufferedImage> concurrentMap;
 	private ArrayList<String> imagePaths;
-	private AtomicBoolean completed;
-	private AtomicInteger thNumber;
+	private AtomicBoolean loadCompleted;
+	private AtomicInteger completedThreads;
 	private int totalThreads;
 }

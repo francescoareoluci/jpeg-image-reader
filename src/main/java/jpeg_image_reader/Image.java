@@ -30,11 +30,6 @@ public class Image {
 			return this.image;
 		}
 		
-		public int getFirstPixel()
-		{
-			return this.image.getRGB(0, 0);
-		}
-		
 		public int getMean()
 		{
 			int sum = 0;
@@ -74,18 +69,17 @@ public class Image {
 			        int g = (rgb >> 8) & 0xFF;
 			        int b = (rgb & 0xFF);
 
-			      // Normalize and evaluate gamma power
+			        // Normalize and evaluate gamma power
 			        float rGamma = (float) Math.pow(r / 255.0, GAMMA);
 			        float gGamma = (float) Math.pow(g / 255.0, GAMMA);
 			        float bGamma = (float) Math.pow(b / 255.0, GAMMA);
 
-			        float luminance = (float) (R_COEFF * rGamma +
-			        													G_COEFF * gGamma + B_COEFF * bGamma);
+			        float luminance = (float) (R_COEFF * rGamma + G_COEFF * gGamma + B_COEFF * bGamma);
 
-			      // Inverse gamma power and rescale to byte range:
+			        // Inverse gamma power and scale to byte range:
 			        int grayLevel = (int) (255.0 * Math.pow(luminance, 1.0 / GAMMA));
 			        int grayPixel = (grayLevel << 16) + (grayLevel << 8) + grayLevel; 
-			      grayscaleImage.setRGB(x, y, grayPixel);
+			        grayscaleImage.setRGB(x, y, grayPixel);
 			   }
 			}
 		

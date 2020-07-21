@@ -16,16 +16,30 @@ public class ThreadPool {
 		this.pool.prestartAllCoreThreads();
 	}
 	
-	// static method to create instance of Singleton class 
+	/**
+	 * Singleton constructor
+	 * 
+	 * @return the instance of ThreadPool
+	 */
     public static ThreadPool getThreadPool() 
-   { 
-       // To ensure only one instance is created 
+    { 
     	if (instance == null) { 
     		instance = new ThreadPool(); 
-      }
+    	}
     	
         return instance; 
-    } 
+    }
+    
+    public long getCompletedTask() 
+	{
+		return this.pool.getCompletedTaskCount();
+	}
+    
+    public int getPoolSize()
+	{
+		System.out.println(this.pool.getPoolSize());
+		return this.pool.getPoolSize();
+	}
     
     /**
      * This method can be used to submit 
@@ -34,14 +48,14 @@ public class ThreadPool {
      * @param r: Runnable
      */
     public void submitThread(Runnable r)
-   {
+    {
     	// Submit a Runnable object
-    	 this.pool.submit(r);
-   }
+    	this.pool.submit(r);
+    }
 	
     /**
      * This method can be used to submit 
-     * a Callable object
+     * a Callable object to process images
      * 
      * @param c: Callable
      * @return		The Future containing the BufferedImage
@@ -55,9 +69,9 @@ public class ThreadPool {
 		 return future;
 	}
 	
-	 /**
+	/**
      * This method can be used to submit 
-     * a Callable object
+     * a Callable object to load images
      * 
      * @param c: Callable
      * @return		The Future containing the BufferedImage
@@ -68,12 +82,7 @@ public class ThreadPool {
 		Future<Integer> future;
 		future = this.pool.submit(c);
 		
-		 return future;
-	}
-	
-	public long getCompletedTask() 
-	{
-		return this.pool.getCompletedTaskCount();
+		return future;
 	}
 	
 	/**
@@ -93,12 +102,6 @@ public class ThreadPool {
 		return true;
 	}
 	
-	public int getPoolSize()
-	{
-		System.out.println(this.pool.getPoolSize());
-		return this.pool.getPoolSize();
-	}
-	
 	/**
 	 * Shutdown the thread pool
 	 *
@@ -111,5 +114,5 @@ public class ThreadPool {
 	}
 	
 	private ThreadPoolExecutor pool;				///< Thread pool to handle parallel image loading
-    private static ThreadPool instance = null; 
+    private static ThreadPool instance = null; 		///< To implement Singleton constructor
 }

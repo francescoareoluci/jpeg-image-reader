@@ -5,12 +5,14 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-public class BenchmarkSuite {
+public final class BenchmarkSuite {
 	
-	public BenchmarkSuite() {}
+	private BenchmarkSuite() {}
 	
-	public boolean performSequentialLoadBench(String folderPath)
+	public static boolean runSequentialLoad(String folderPath)
 	{
+		System.out.println("Starting sequential load of images in path " + folderPath);
+		
 		ImageLoader imageLoader = new ImageLoader();
 		
 		long startTime = System.currentTimeMillis();
@@ -22,45 +24,51 @@ public class BenchmarkSuite {
 		
 		long endTime = System.currentTimeMillis();
 		
+		System.out.println("Readed " + imageLoader.getNumberOfImages() + " images");
 		System.out.println("Sequential loading execution time: " + (endTime - startTime) + "ms"); 
 		
 		imageLoader.resetImages();
-		imageLoader.closeImageLoader();
+		imageLoader.detachPool();
 		
 		return true;
 	}
 	
-	public boolean performParallelLoadBench(String folderPath, int threadsNumber)
+	public static boolean runParallelLoad(String folderPath, int threadsNumber)
 	{
+		System.out.println("Starting parallel load using thread pool of images in path " + folderPath);
+		
 		ImageLoader imageLoader = new ImageLoader();
 		
 		long startTime = System.currentTimeMillis();
 		
-		imageLoader.parallelLoadImages(folderPath, threadsNumber);
+		imageLoader.parallelLoadImages(folderPath, threadsNumber, ImageLoader.ThreadType.POOL_THREAD);
 		while (!imageLoader.getCompleted()) {}
 		
 		long endTime = System.currentTimeMillis();
 		
+		System.out.println("Readed " + imageLoader.getNumberOfImages() + " images");
 		System.out.println("Parallel loading execution time: " + (endTime - startTime) + "ms"); 
 		
 		imageLoader.resetImages();
-		imageLoader.closeImageLoader();
+		imageLoader.detachPool();
 		
 		return true;
 	}
 	
-	public boolean performCallableLoadBench(String folderPath, int threadsNumber)
+	public static boolean runCallableLoad(String folderPath, int threadsNumber)
 	{
+		System.out.println("Starting parallel load using callables of images in path " + folderPath);
+		
 		ImageLoader imageLoader = new ImageLoader();
 		
 		long startTime = System.currentTimeMillis();
 		
 		ArrayList<Future<Integer>> futureList = new ArrayList<Future<Integer>>();
 		futureList = imageLoader.callableLoadImages(folderPath, threadsNumber);
-		//while (!imageLoader.getCompleted()) {}
+		int imagesCount = 0;
 		for (Future<Integer> f : futureList) {
 			try {
-				System.out.println(f.get());
+				imagesCount += f.get();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException e) {
@@ -70,35 +78,41 @@ public class BenchmarkSuite {
 		
 		long endTime = System.currentTimeMillis();
 		
-		System.out.println("Parallel loading execution time: " + (endTime - startTime) + "ms"); 
+		System.out.println("Readed " + imagesCount + " images");
+		System.out.println("Parallel loading (callable) execution time: " + (endTime - startTime) + "ms"); 
 		
 		imageLoader.resetImages();
-		imageLoader.closeImageLoader();
+		imageLoader.detachPool();
 		
 		return true;
 	}
 	
-	public boolean performParallelLoadNoPoolBench(String folderPath, int threadsNumber)
+	public static boolean runParallelLoadNoPool(String folderPath, int threadsNumber)
 	{
+		System.out.println("Starting parallel load using threads of images in path " + folderPath);
+		
 		ImageLoader imageLoader = new ImageLoader();
 		
 		long startTime = System.currentTimeMillis();
 		
-		imageLoader.parallelLoadImagesNoPool(folderPath, threadsNumber);
+		imageLoader.parallelLoadImages(folderPath, threadsNumber, ImageLoader.ThreadType.THREAD);
 		while (!imageLoader.getCompleted()) {}
 		
 		long endTime = System.currentTimeMillis();
 		
-		System.out.println("Parallel loading execution time: " + (endTime - startTime) + "ms"); 
+		System.out.println("Readed " + imageLoader.getNumberOfImages() + " images");
+		System.out.println("Parallel loading (without pool) execution time: " + (endTime - startTime) + "ms"); 
 		
 		imageLoader.resetImages();
-		imageLoader.closeImageLoader();
+		imageLoader.detachPool();
 		
 		return true;
 	}
 	
-	public boolean performSequentialLoadOpBench(String folderPath)
+	public static boolean runSequentialLoadOp(String folderPath)
 	{
+		System.out.println("Starting sequential load and processing of images in path " + folderPath);
+		
 		ImageLoader imageLoader = new ImageLoader();
 		
 		long startTime = System.currentTimeMillis();
@@ -122,16 +136,20 @@ public class BenchmarkSuite {
 		}
 		
 		long endTime = System.currentTimeMillis();
-		System.out.println("Sequential loading+op execution time: " + (endTime - startTime) + "ms"); 
+		
+		System.out.println("Converted " + gsImages.size() + " images to grayscale");
+		System.out.println("Sequential loading + processing execution time: " + (endTime - startTime) + "ms"); 
 		
 		imageLoader.resetImages();
-		imageLoader.closeImageLoader();
+		imageLoader.detachPool();
 		
 		return true;
 	}
 	
-	public boolean performSequentialLoadParallelOpBench(String folderPath)
+	public static boolean runSequentialLoadParallelOp(String folderPath)
 	{
+		System.out.println("Starting sequential load and parallel processing of images in path " + folderPath);
+		
 		ImageLoader imageLoader = new ImageLoader();
 		ThreadPool pool = ThreadPool.getThreadPool();
 		
@@ -170,22 +188,26 @@ public class BenchmarkSuite {
 		}
 		
 		long endTime = System.currentTimeMillis();
-		System.out.println("Sequential loading+op execution time: " + (endTime - startTime) + "ms"); 
+		
+		System.out.println("Converted " + gsImages.size() + " images to grayscale");
+		System.out.println("Sequential loading + parallel processing execution time: " + (endTime - startTime) + "ms"); 
 		
 		imageLoader.resetImages();
-		imageLoader.closeImageLoader();
+		imageLoader.detachPool();
 		
 		return true;
 	}
 	
-	public boolean performParallelLoadOpBench(String folderPath, int threadsNumber)
+	public static boolean runParallelLoadOp(String folderPath, int threadsNumber)
 	{
+		System.out.println("Starting parallel load and async processing of images in path " + folderPath);
+		
 		ImageLoader imageLoader = new ImageLoader();
 		ThreadPool pool = ThreadPool.getThreadPool();
 		
 		long startTime = System.currentTimeMillis();
 		
-		imageLoader.parallelLoadImages(folderPath, threadsNumber);
+		imageLoader.parallelLoadImages(folderPath, threadsNumber, ImageLoader.ThreadType.POOL_THREAD);
 		
 		BufferedImage image = null;
 		Image img = new Image();
@@ -215,10 +237,12 @@ public class BenchmarkSuite {
 		}
 		
 		long endTime = System.currentTimeMillis();
-		System.out.println("Parallel loading+op execution time: " + (endTime - startTime) + "ms"); 
+		
+		System.out.println("Converted " + gsImages.size() + " images to grayscale");
+		System.out.println("Parallel loading + parallel processing execution time: " + (endTime - startTime) + "ms"); 
 		
 		imageLoader.resetImages();
-		imageLoader.closeImageLoader();
+		imageLoader.detachPool();
 		
 		return true;
 	}

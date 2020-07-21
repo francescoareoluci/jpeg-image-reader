@@ -5,26 +5,26 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.imageio.ImageIO;
 
 public class ImageLoader {
-	
-		static int DEFAULT_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
+		
+		enum ThreadType {
+			THREAD,
+			POOL_THREAD,
+		};
 	
 		public ImageLoader() 
 		{
 			this.loadedPath = new String();
 			this.imageMap = new ConcurrentHashMap<String, BufferedImage>();
 			this.threadPool = ThreadPool.getThreadPool();
-			this.completed = new AtomicBoolean(true);
-			this.threadsCompleted = new AtomicInteger(0);
-			//this.threadPool.prestartAllCoreThreads();
+			this.loadCompleted = new AtomicBoolean(true);
+			this.completedThreads = new AtomicInteger(0);
 		}
 	
 		public String getLoadedPath()
@@ -39,7 +39,7 @@ public class ImageLoader {
 		
 		public boolean getCompleted()
 		{
-			return this.completed.get();
+			return this.loadCompleted.get();
 		}
 		
 		/**
@@ -55,7 +55,7 @@ public class ImageLoader {
 				return false;
 			}
 			
-			if (!this.completed.get()) {
+			if (!this.loadCompleted.get()) {
 				System.out.println("A loading is ongoing, cannot resize pool");
 				return false;
 			}
@@ -65,8 +65,8 @@ public class ImageLoader {
 		}
 	
 		/**
-		 * This method can be used to load a set of images 
-		 * from the requested path
+		 * This method can be used to sequentially load a 
+		 * set of images from the requested path
 		 *
 		 * @param path: directory from which images should be loaded
 		 * @return		true if successful, false otherwise
@@ -76,7 +76,7 @@ public class ImageLoader {
 			// Check if path is a directory
 			File dir = new File(path);
 			if (!dir.isDirectory()) {
-				// TODO: log
+				System.out.println("Requested path is not a directory");
 				return false;
 			}
 			
@@ -106,21 +106,22 @@ public class ImageLoader {
 		
 		/**
 		 * This method can be used to load in parallel
-		 * mode the requested images using the thread pool
+		 * mode the requested images
 		 *
 		 * @param path: directory from which images should be loaded
 		 * @return		true if successful, false otherwise
 		 */
-		public boolean parallelLoadImages(String path, int threadsNumbers)
+		public boolean parallelLoadImages(String path, int threadsNumbers, ThreadType type)
 		{
 			// Check if path is a directory
 			File dir = new File(path);
 			if (!dir.isDirectory()) {
+				System.out.println("Requested path is not a directory");
 				return false;
 			}
 			
-			this.completed.set(false);
-			this.threadsCompleted.set(0);
+			this.loadCompleted.set(false);
+			this.completedThreads.set(0);
 						
 			this.loadedPath = path;
 						
@@ -145,10 +146,12 @@ public class ImageLoader {
 			int start = 0;
 			int stop = 0;
 			
+			// Evaluate number of threads
 			int end = threadsNumbers > paths.size() ? paths.size() : threadsNumbers;
 						
 			long startTime = System.currentTimeMillis();
 			for (int i = 0; i < end; i++) {
+				// Evaluate number of images per thread
 				if (i != 0) {
 					start = stop;
 				}
@@ -156,13 +159,25 @@ public class ImageLoader {
 				if ((stop > paths.size()) || (i == threadsNumbers - 1)) {
 					stop = paths.size();
 				}
-				//System.out.println(start + " - " + stop);
 				
-				threadPool.submitThread(new ImageLoaderThread(this.imageMap,
-																this.completed,
+				if (type == ThreadType.POOL_THREAD) {
+					// Start loading by submitting a task to the pool
+					threadPool.submitThread(new ImageLoaderThread(this.imageMap,
+																this.loadCompleted,
 																new ArrayList<String>(paths.subList(start, stop)),
-																this.threadsCompleted, 
+																this.completedThreads, 
 																end));
+				}
+				else {
+					// Start loading by starting a thread
+					ImageLoaderThread imt = new ImageLoaderThread(this.imageMap,
+																this.loadCompleted,
+																new ArrayList<String>(paths.subList(start, stop)),
+																this.completedThreads, 
+																end);
+					Thread th = new Thread(imt);
+					th.start();
+				}
 			}
 			long endTime = System.currentTimeMillis();
 			System.out.println("Thread creation took: " + (endTime - startTime) + "ms"); 
@@ -172,7 +187,7 @@ public class ImageLoader {
 		
 		/**
 		 * This method can be used to load in parallel
-		 * mode the requested images using the thread pool
+		 * mode the requested images using Callables
 		 *
 		 * @param path: directory from which images should be loaded
 		 * @return		true if successful, false otherwise
@@ -182,11 +197,12 @@ public class ImageLoader {
 			// Check if path is a directory
 			File dir = new File(path);
 			if (!dir.isDirectory()) {
+				System.out.println("Requested path is not a directory");
 				return new ArrayList<Future<Integer>>();
 			}
 			
-			this.completed.set(false);
-			this.threadsCompleted.set(0);
+			this.loadCompleted.set(false);
+			this.completedThreads.set(0);
 						
 			this.loadedPath = path;
 						
@@ -223,7 +239,6 @@ public class ImageLoader {
 				if ((stop > paths.size()) || (i == threadsNumbers - 1)) {
 					stop = paths.size();
 				}
-				//System.out.println(start + " - " + stop);
 				
 				futureList.add(threadPool.submitCallableReader(new ImageLoaderCallable(this.imageMap,
 																							new ArrayList<String>(paths.subList(start, stop)))));
@@ -235,99 +250,8 @@ public class ImageLoader {
 		}
 		
 		/**
-		 * This method can be used to load in parallel
-		 * mode the requested images without using a thread pool
-		 *
-		 * @param path: directory from which images should be loaded
-		 * @return		true if successful, false otherwise
-		 */
-		public boolean parallelLoadImagesNoPool(String path, int threadsNumbers)
-		{
-			// Check if path is a directory
-			File dir = new File(path);
-			if (!dir.isDirectory()) {
-				return false;
-			}
-			
-			this.completed.set(false);
-			this.threadsCompleted.set(0);
-						
-			this.loadedPath = path;
-						
-			// Iterate in path for jpg images
-			File[] files = new File(path).listFiles();
-			String fileName = new String();
-			ArrayList<String> paths = new ArrayList<String>();
-			
-			for (File file : files) {
-				if (file.isDirectory()) {
-					continue;
-				}
-							
-				fileName = file.getName();
-				if (fileName.endsWith("jpg") ||
-						fileName.endsWith("jpeg")) {
-					paths.add(file.getAbsolutePath());
-				}
-			}
-			
-			int imagesPerThread = Math.floorDiv(paths.size(), threadsNumbers) + 1;
-			int start = 0;
-			int stop = 0;
-			
-			int end = threadsNumbers > paths.size() ? paths.size() : threadsNumbers;
-						
-			long startTime = System.currentTimeMillis();
-			for (int i = 0; i < end; i++) {
-				if (i != 0) {
-					start = stop;
-				}
-				stop = (i + 1) * imagesPerThread;
-				if ((stop > paths.size()) || (i == threadsNumbers - 1)) {
-					stop = paths.size();
-				}
-				
-				ImageLoaderThread imt = new ImageLoaderThread(this.imageMap,
-																													this.completed,
-																													new ArrayList<String>(paths.subList(start, stop)),
-																													this.threadsCompleted, 
-																													end);
-				Thread th = new Thread(imt);
-				th.start();
-			}
-			long endTime = System.currentTimeMillis();
-			System.out.println("Thread creation took: " + (endTime - startTime) + "ms"); 
-		
-			return true;
-		}
-		
-		/**
 		 * This method can be used to retrieve an image from
-		 * the loaded list, specifying its index in the list
-		 *
-		 * @param number: index number of the image that should be returned
-		 * @return		  BufferedImage of the requested image, if not
-		 *				  existing returns null
-		 */
-		public BufferedImage getImage(int number)
-		{
-			BufferedImage img = null;
-			int idx = 0;
-			
-			for (String key : this.imageMap.keySet()) {
-				if (number == idx) {
-					img = this.imageMap.get(key);
-					break;
-				}
-				idx++;
-			}
-			
-			return img;
-		}
-		
-		/**
-		 * This method can be used to retrieve an image from
-		 * the loaded list, specifying its absolute path
+		 * the loaded map, specifying its absolute path
 		 *
 		 * @param filePath: absolute image path that should be returned
 		 * @return			BufferedImage of the requested image, if not
@@ -396,7 +320,7 @@ public class ImageLoader {
 		 *
 		 * @return	true if successful, false otherwise
 		 */
-		public boolean closeImageLoader()
+		public boolean detachPool()
 		{
 			this.threadPool.closePool();
 			return true;
@@ -424,10 +348,10 @@ public class ImageLoader {
 			}
 			return img;
 		}
-	
-		private String loadedPath;									///< Path from which images should be loaded
+		
+		private String loadedPath;									///< Path from which images are loaded
 		private ConcurrentHashMap<String, BufferedImage> imageMap;	///< Map containing images
-		private ThreadPool threadPool;				///< Thread pool to handle parallel image loading
-		private AtomicBoolean completed;							///< Atomic flag for signal loading completion
-		private AtomicInteger threadsCompleted;						///< Atomic integer to count the number of completed threads
+		private ThreadPool threadPool;								///< Thread pool to handle parallel image loading
+		private AtomicBoolean loadCompleted;						///< Atomic flag to signal loading completion
+		private AtomicInteger completedThreads;						///< Atomic integer to count the number of completed threads
 }

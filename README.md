@@ -1,7 +1,7 @@
 # JPEG Image Reader
 
 This repository contains an application that demonstrate the usage of a multithreading approach to read jpg images from a directory. \
-Purpose of this approach is to show how to do asynchrounous image processing during image loading. It supports multiple types of loading:
+Purpose of this approach is to show how to asynchrounously process images during image loading. It supports multiple types of loading:
 
 * sequential
 * parallel with Runnables
@@ -14,11 +14,11 @@ The processing operation used in this application is the rgb to grayscale color 
 * sequential load + parallel processing using Callables and thread pool
 * parallel load using Runnables and thread pool + parallel processing using Callables and thread pool
 
-The thread pool is shared using a singleton pattern.
+The thread pool is shared among clients using a singleton pattern.
 
 ## Application build
 
-The application is based on Maven. Thus, to build the jar file, from the root folder:
+The application is based on Maven. Thus, to build the jar file, from the root folder, run:
 
 > mvn package
 

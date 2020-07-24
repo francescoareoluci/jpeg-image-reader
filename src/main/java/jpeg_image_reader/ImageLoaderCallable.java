@@ -44,6 +44,6 @@ public class ImageLoaderCallable implements Callable<Integer>
         return readImgs;
 	}
 	
-	private ConcurrentHashMap<String, BufferedImage> concurrentMap;
-	private ArrayList<String> imagePaths;
+	private ConcurrentHashMap<String, BufferedImage> concurrentMap;		///< Reference to the caller map
+	private ArrayList<String> imagePaths;								///< Paths of images to be loaded
 }

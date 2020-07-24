@@ -16,5 +16,5 @@ public class ImageProcessingThread implements Callable<BufferedImage> {
 		return gs;
 	}
 	
-	private Image image;
+	private Image image;		///< Reference  the caller image
 }

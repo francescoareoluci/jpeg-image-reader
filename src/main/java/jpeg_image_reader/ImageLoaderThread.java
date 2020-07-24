@@ -14,13 +14,13 @@ public class ImageLoaderThread implements Runnable {
 	
 	public ImageLoaderThread(ConcurrentHashMap<String, BufferedImage> hashMap, 
 								AtomicBoolean loadCompleted, 
-								ArrayList<String> imagePaths, 
+								ArrayList<String> imagesPath, 
 								AtomicInteger completedThreads, 
 								int number)
 	{
 		this.concurrentMap = hashMap;
 		this.loadCompleted = loadCompleted;
-		this.imagePaths = imagePaths;
+		this.imagesPath = imagesPath;
 		this.completedThreads = completedThreads;
 		this.totalThreads = number;
 	}
@@ -28,7 +28,7 @@ public class ImageLoaderThread implements Runnable {
 	public void run() {
 		BufferedImage img = null;
         	
-        for (String path : imagePaths) {
+        for (String path : imagesPath) {
         	try {
         		img = ImageIO.read(new File(path));
         		if (img != null) {
@@ -51,9 +51,9 @@ public class ImageLoaderThread implements Runnable {
         }
     }
 		
-	private ConcurrentHashMap<String, BufferedImage> concurrentMap;
-	private ArrayList<String> imagePaths;
-	private AtomicBoolean loadCompleted;
-	private AtomicInteger completedThreads;
-	private int totalThreads;
+	private ConcurrentHashMap<String, BufferedImage> concurrentMap;		///< Reference to the caller map
+	private ArrayList<String> imagesPath;								///< Paths of images to be loaded
+	private AtomicBoolean loadCompleted;								///< Reference to the caller completed boolean
+	private AtomicInteger completedThreads;								///< Reference to the caller completed threads
+	private int totalThreads;											///< Total number of threads created for the load
 }

@@ -10,6 +10,7 @@ public class ImageProcessingThread implements Callable<BufferedImage> {
 		this.image = image;
 	}
 	
+	@Override
 	public BufferedImage call() 
 	{
 		BufferedImage gs = this.image.grayscaleConversion();

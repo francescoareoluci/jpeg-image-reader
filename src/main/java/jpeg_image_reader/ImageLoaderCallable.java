@@ -18,6 +18,7 @@ public class ImageLoaderCallable implements Callable<Integer>
 		this.imagePaths = imagePaths;
 	}
 	
+	@Override
 	public Integer call()
 	{
 		BufferedImage img = null;
@@ -45,5 +46,5 @@ public class ImageLoaderCallable implements Callable<Integer>
 	}
 	
 	private ConcurrentHashMap<String, BufferedImage> concurrentMap;		///< Reference to the caller map
-	private ArrayList<String> imagePaths;								///< Paths of images to be loaded
+	private ArrayList<String> imagePaths;																	///< Paths of images to be loaded
 }

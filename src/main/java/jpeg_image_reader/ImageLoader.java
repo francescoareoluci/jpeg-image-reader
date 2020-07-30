@@ -4,8 +4,11 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -13,6 +16,7 @@ import javax.imageio.ImageIO;
 
 public class ImageLoader {
 		
+		private static int POLL_TIMEOUT_MS = 500;
 		enum ThreadType {
 			NO_POOL_THREAD,
 			POOL_THREAD,
@@ -37,9 +41,30 @@ public class ImageLoader {
 			return this.imageMap.size();
 		}
 		
+		public boolean isMapEmpty()
+		{
+			return this.imageMap.isEmpty();
+		}
+		
 		public boolean getCompleted()
 		{
 			return this.loadCompleted.get();
+		}
+		
+		/**
+		 * Wait for producers to insert images in map.
+		 * This is done by polling a blocking queue 
+		 * that threads use to signal that an image has been
+		 * added.
+		 * 
+		 */
+		public void waitForProducer()
+		{
+				try {
+					this.queue.poll(POLL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 		}
 		
 		/**
@@ -71,7 +96,7 @@ public class ImageLoader {
 		 * @param path: directory from which images should be loaded
 		 * @return		true if successful, false otherwise
 		 */
-		public boolean loadImages(String path)
+		public boolean loadImages(String path, int timeout)
 		{
 			// Check if path is a directory
 			File dir = new File(path);
@@ -97,6 +122,13 @@ public class ImageLoader {
 					img = this.loadImage(file.getAbsolutePath());
 					if (img != null) {
 						this.imageMap.put(file.getAbsolutePath(), img);
+						if (timeout != 0) {
+							try {
+								Thread.sleep(timeout);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
 					}
 				}
 			}
@@ -112,7 +144,7 @@ public class ImageLoader {
 		 * @return		thread list that can be used to wait for termination
 		 * 				if pool is not used
 		 */
-		public ArrayList<Thread> parallelLoadImages(String path, int threadsNumbers, ThreadType type)
+		public ArrayList<Thread> parallelLoadImages(String path, int threadsNumbers, ThreadType type, int timeout)
 		{
 			ArrayList<Thread> threadList = new ArrayList<Thread>();
 			
@@ -145,6 +177,7 @@ public class ImageLoader {
 				}
 			}
 			
+			this.queue = new ArrayBlockingQueue<Integer>(paths.size());
 			int imagesPerThread = Math.floorDiv(paths.size(), threadsNumbers) + 1;
 			int start = 0;
 			int stop = 0;
@@ -152,7 +185,6 @@ public class ImageLoader {
 			// Evaluate number of threads
 			int end = threadsNumbers > paths.size() ? paths.size() : threadsNumbers;
 						
-			long startTime = System.currentTimeMillis();
 			for (int i = 0; i < end; i++) {
 				// Evaluate number of images per thread
 				if (i != 0) {
@@ -167,7 +199,7 @@ public class ImageLoader {
 						this.loadCompleted,
 						new ArrayList<String>(paths.subList(start, stop)),
 						this.completedThreads, 
-						end);
+						end, this.queue, timeout);
 				
 				if (type == ThreadType.POOL_THREAD) {
 					// Start loading by submitting a task to the pool
@@ -180,8 +212,6 @@ public class ImageLoader {
 					threadList.add(th);
 				}
 			}
-			long endTime = System.currentTimeMillis();
-			System.out.println("Thread creation took: " + (endTime - startTime) + "ms"); 
 		
 			return threadList;
 		}
@@ -231,8 +261,7 @@ public class ImageLoader {
 			int stop = 0;
 			
 			int end = threadsNumbers > paths.size() ? paths.size() : threadsNumbers;
-						
-			long startTime = System.currentTimeMillis();
+
 			for (int i = 0; i < end; i++) {
 				if (i != 0) {
 					start = stop;
@@ -245,8 +274,6 @@ public class ImageLoader {
 				futureList.add(threadPool.submitCallableReader(new ImageLoaderCallable(this.imageMap,
 																							new ArrayList<String>(paths.subList(start, stop)))));
 			}
-			long endTime = System.currentTimeMillis();
-			System.out.println("Thread creation took: " + (endTime - startTime) + "ms"); 
 		
 			return futureList;
 		}
@@ -293,7 +320,7 @@ public class ImageLoader {
 		public BufferedImage popImage()
 		{
 			BufferedImage img = null;
-			if (this.getNumberOfImages() == 0) {
+			if (this.imageMap.isEmpty()) {
 				return img;
 			}
 			
@@ -340,9 +367,10 @@ public class ImageLoader {
 			return img;
 		}
 		
-		private String loadedPath;									///< Path from which images are loaded
-		private ConcurrentHashMap<String, BufferedImage> imageMap;	///< Map containing images
-		private ThreadPool threadPool;								///< Thread pool to handle parallel image loading
-		private AtomicBoolean loadCompleted;						///< Atomic flag to signal loading completion
-		private AtomicInteger completedThreads;						///< Atomic integer to count the number of completed threads
+		private String loadedPath;																				///< Path from which images are loaded
+		private ConcurrentHashMap<String, BufferedImage> imageMap;		///< Map containing images
+		private ThreadPool threadPool;																	///< Thread pool to handle parallel image loading
+		private AtomicBoolean loadCompleted;														///< Atomic flag to signal loading completion
+		private AtomicInteger completedThreads;													///< Atomic integer to count the number of completed threads
+		private BlockingQueue<Integer> queue;													///< Using this queue, client can wait for producer to insert element in map
 }

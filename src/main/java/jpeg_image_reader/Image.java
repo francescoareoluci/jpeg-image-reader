@@ -30,24 +30,50 @@ public class Image {
 			return this.image;
 		}
 		
-		public int getMean()
+		/**
+		 * Implement an average pixel's channels grayscale
+		 * conversion of the set image
+		 * 
+		 * @return Grayscale images
+		 */
+		public BufferedImage grayscaleConversion()
 		{
-			int sum = 0;
-			for (int i = 0; i < this.image.getWidth(); i++) {
-				for (int j = 0; j < this.image.getHeight(); j++) {
-					sum += this.image.getRGB(i, j);
+			int width = this.image.getWidth();
+			int height = this.image.getHeight();
+			BufferedImage image = new BufferedImage(width, height,  BufferedImage.TYPE_BYTE_GRAY);
+			
+			for (int i = 0; i < height; i++) {
+				for (int j = 0; j < width; j++) {
+					 //convert to grayscale
+				        int p = this.image.getRGB(j, i);
+
+				        int a = (p >> 24) & 0xff;
+				        int r = (p >> 16) & 0xff;
+				        int g = (p >> 8) & 0xff;
+				        int b = p & 0xff;
+
+				        //calculate average
+				        int avg = (r + g + b) / 3;
+
+				      //replace RGB value with avg
+				      p = (a << 24) | (avg << 16) | (avg << 8) | avg;
+
+				      image.setRGB(j, i, p);
 				}
-			}
-			return sum / (this.image.getHeight() * this.image.getWidth());
+	      }
+
+			this.image = image;
+			return this.image;
 		}
 		
 		/**
 		 * Perform a grayscale conversion of the
-	     * set image and return it.
+	    * set image. The conversion is done with
+	    * weighted luminance evaluation and gamma expansion 
 		 *
 		 * @return the grayscale BufferedImage
 		 */
-		public BufferedImage grayscaleConversion()
+		public BufferedImage grayscaleConversionAlt()
 		{	
 			BufferedImage grayscaleImage = null;
 			
@@ -69,21 +95,22 @@ public class Image {
 			        int g = (rgb >> 8) & 0xFF;
 			        int b = (rgb & 0xFF);
 
-			        // Normalize and evaluate gamma power
+			      // Normalize and evaluate gamma power
 			        float rGamma = (float) Math.pow(r / 255.0, GAMMA);
 			        float gGamma = (float) Math.pow(g / 255.0, GAMMA);
 			        float bGamma = (float) Math.pow(b / 255.0, GAMMA);
 
 			        float luminance = (float) (R_COEFF * rGamma + G_COEFF * gGamma + B_COEFF * bGamma);
 
-			        // Inverse gamma power and scale to byte range:
+			      // Inverse gamma power and scale to byte range:
 			        int grayLevel = (int) (255.0 * Math.pow(luminance, 1.0 / GAMMA));
 			        int grayPixel = (grayLevel << 16) + (grayLevel << 8) + grayLevel; 
-			        grayscaleImage.setRGB(x, y, grayPixel);
+			      grayscaleImage.setRGB(x, y, grayPixel);
 			   }
 			}
-		
-			return grayscaleImage;
+			
+			this.image = grayscaleImage;
+			return this.image;
 		}
 		
 		/**

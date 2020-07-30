@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class ThreadPool {
-	static int DEFAULT_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
+	static int DEFAULT_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors() - 2;
 	
 	private ThreadPool() 
 	{
